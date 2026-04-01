@@ -1,0 +1,94 @@
+from fastapi import APIRouter, HTTPException
+from sqlalchemy.orm import Session
+
+from database import SessionLocal
+from models import Medication
+from schemas import MedicationCreate
+from schemas import MedicationCreate, MedicationUpdate
+
+router = APIRouter()
+
+
+@router.post("/medications")
+def add_medication(med: MedicationCreate):
+    db: Session = SessionLocal()
+
+    new_med = Medication(name=med.name, dosage=med.dosage)
+    db.add(new_med)
+    db.commit()
+    db.refresh(new_med)
+
+    db.close()
+
+    return {
+        "message": "Medication added",
+        "data": {
+            "id": new_med.id,
+            "name": new_med.name,
+            "dosage": new_med.dosage
+        }
+    }
+
+
+@router.get("/medications")
+def get_medications():
+    db: Session = SessionLocal()
+
+    meds = db.query(Medication).all()
+
+    db.close()
+
+    return {
+        "medications": [
+            {
+                "id": med.id,
+                "name": med.name,
+                "dosage": med.dosage
+            }
+            for med in meds
+        ]
+    }
+
+
+@router.delete("/medications/{medication_id}")
+def delete_medication(medication_id: int):
+    db: Session = SessionLocal()
+
+    med = db.query(Medication).filter(Medication.id == medication_id).first()
+
+    if not med:
+        db.close()
+        raise HTTPException(status_code=404, detail="Medication not found")
+
+    db.delete(med)
+    db.commit()
+    db.close()
+
+    return {"message": f"Medication {medication_id} deleted successfully"}
+
+
+@router.put("/medications/{medication_id}")
+def update_medication(medication_id: int, updated_med: MedicationUpdate):
+    db: Session = SessionLocal()
+
+    med = db.query(Medication).filter(Medication.id == medication_id).first()
+
+    if not med:
+        db.close()
+        raise HTTPException(status_code=404, detail="Medication not found")
+
+    med.name = updated_med.name
+    med.dosage = updated_med.dosage
+
+    db.commit()
+    db.refresh(med)
+    db.close()
+
+    return {
+        "message": f"Medication {medication_id} updated successfully",
+        "data": {
+            "id": med.id,
+            "name": med.name,
+            "dosage": med.dosage
+        }
+    }
