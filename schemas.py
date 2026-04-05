@@ -1,4 +1,4 @@
-from pydantic import BaseModel
+from pydantic import BaseModel, EmailStr
 
 
 class MedicationCreate(BaseModel):
@@ -15,3 +15,14 @@ class MedicationResponse(BaseModel):
     id: int
     name: str
     dosage: str
+
+
+class UserCreate(BaseModel):
+    email: EmailStr
+    username: str
+    password: str
+
+
+class UserLogin(BaseModel):
+    email: EmailStr
+    password: str
